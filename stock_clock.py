@@ -1,10 +1,13 @@
 #!/usr/bin/python
 
 import tkinter as tk
-import time
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import chime
 
 # Configurations
+time_sync_precision = 0.999
+time_zone=ZoneInfo("America/New_York")
 font_size=32
 font_color="lime"
 font_color_alt="red"
@@ -29,10 +32,11 @@ def should_beep(minutes, seconds):
 
 
 def update_time():
-    current_time = time.strftime("%H:%M:%S")
+    now = datetime.now(time_zone)
+    current_time = now.strftime("%H:%M:%S")
 
-    current_seconds = int(time.strftime("%S"))
-    current_minutes = int(time.strftime("%M"))
+    current_seconds = int(now.strftime("%S"))
+    current_minutes = int(now.strftime("%M"))
 
     if should_change_font_color(current_seconds):
         clock_label.config(fg=font_color_alt)
@@ -67,6 +71,19 @@ def on_show_settings_window():
 def on_drag_window(event):
     root.geometry(f"+{event.x_root}+{event.y_root}")
 
+def get_fractional_seconds():
+    return float(datetime.now(time_zone).strftime(".%f"))
+
+def start():
+    print("syncing clock...")
+    fractional_seconds = get_fractional_seconds()
+
+    while fractional_seconds <= time_sync_precision:
+        fractional_seconds = get_fractional_seconds()
+
+    update_time()
+    root.mainloop()
+
 
 # Set up the main application window
 root = tk.Tk()
@@ -80,11 +97,9 @@ clock_label = tk.Label(root, font=("Helvetica", font_size), fg=font_color, bg=ba
 clock_label.pack(pady=4, padx=4, expand=True)
 
 
-# Start the time update loop
-update_time()
-
-
 # Run the application
 root.bind("<B1-Motion>", on_drag_window)
 root.eval(f"tk::PlaceWindow {str(root)} center")
-root.mainloop()
+
+
+start()
